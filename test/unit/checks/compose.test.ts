@@ -31,8 +31,8 @@ describe('compose checks', () => {
     checks = getChecksByCategory('compose');
   });
 
-  it('should have all 5 compose checks registered', () => {
-    expect(checks.length).toBe(5);
+  it('should have all 7 compose checks registered', () => {
+    expect(checks.length).toBe(7);
   });
 
   // --- compose.static-ip ---
@@ -432,6 +432,260 @@ services:
       const results = await check.run(ctx);
 
       expect(results).toHaveLength(1);
+    });
+  });
+
+  // --- compose.network-mismatch ---
+  describe('compose.network-mismatch', () => {
+    const check = findCheck('compose.network-mismatch');
+
+    it('should flag dependent services on different explicit networks', async () => {
+      const raw = `
+services:
+  web:
+    image: nginx
+    depends_on:
+      - api
+    networks:
+      - frontend
+  api:
+    image: node
+    networks:
+      - backend
+networks:
+  frontend: {}
+  backend: {}
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id).toBe('compose.network-mismatch');
+      expect(results[0].severity).toBe('warning');
+      expect(results[0].meta?.serviceName).toBe('web');
+      expect(results[0].meta?.dependencyName).toBe('api');
+    });
+
+    it('should not flag when services share a network', async () => {
+      const raw = `
+services:
+  web:
+    image: nginx
+    depends_on:
+      - api
+    networks:
+      - shared
+  api:
+    image: node
+    networks:
+      - shared
+networks:
+  shared: {}
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(0);
+    });
+
+    it('should not flag when either service has no explicit networks', async () => {
+      const raw = `
+services:
+  web:
+    image: nginx
+    depends_on:
+      - api
+    networks:
+      - frontend
+  api:
+    image: node
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(0);
+    });
+
+    it('should not flag when no depends_on', async () => {
+      const raw = `
+services:
+  web:
+    image: nginx
+    networks:
+      - frontend
+  api:
+    image: node
+    networks:
+      - backend
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(0);
+    });
+
+    it('should handle depends_on as object format', async () => {
+      const raw = `
+services:
+  web:
+    image: nginx
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - frontend
+  api:
+    image: node
+    networks:
+      - backend
+networks:
+  frontend: {}
+  backend: {}
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].meta?.dependencyName).toBe('api');
+    });
+
+    it('should return empty if no compose', async () => {
+      const ctx = makeContext();
+      const results = await check.run(ctx);
+      expect(results).toHaveLength(0);
+    });
+
+    it('should handle networks as object format on services', async () => {
+      const raw = `
+services:
+  web:
+    image: nginx
+    depends_on:
+      - api
+    networks:
+      frontend:
+        ipv4_address: 172.20.0.10
+  api:
+    image: node
+    networks:
+      backend: {}
+networks:
+  frontend: {}
+  backend: {}
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(1);
+    });
+  });
+
+  // --- compose.undefined-network ---
+  describe('compose.undefined-network', () => {
+    const check = findCheck('compose.undefined-network');
+
+    it('should flag service referencing network not in top-level networks', async () => {
+      const raw = `
+services:
+  mail:
+    image: mailhog/mailhog
+    networks:
+      - mailnet
+networks:
+  frontend: {}
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id).toBe('compose.undefined-network');
+      expect(results[0].severity).toBe('error');
+      expect(results[0].meta?.serviceName).toBe('mail');
+      expect(results[0].meta?.networkName).toBe('mailnet');
+    });
+
+    it('should not flag when network is defined', async () => {
+      const raw = `
+services:
+  web:
+    image: nginx
+    networks:
+      - frontend
+networks:
+  frontend: {}
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(0);
+    });
+
+    it('should not flag when no top-level networks block exists', async () => {
+      const raw = `
+services:
+  web:
+    image: nginx
+    networks:
+      - mynet
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(0);
+    });
+
+    it('should handle networks as object format', async () => {
+      const raw = `
+services:
+  web:
+    image: nginx
+    networks:
+      undefined_net: {}
+networks:
+  frontend: {}
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].meta?.networkName).toBe('undefined_net');
+    });
+
+    it('should flag multiple undefined networks across services', async () => {
+      const raw = `
+services:
+  web:
+    image: nginx
+    networks:
+      - ghost1
+  api:
+    image: node
+    networks:
+      - ghost2
+networks:
+  real: {}
+`;
+      const compose = parseCompose(raw, '/test/docker-compose.yml');
+      const ctx = makeContext({ compose });
+      const results = await check.run(ctx);
+
+      expect(results).toHaveLength(2);
+    });
+
+    it('should return empty if no compose', async () => {
+      const ctx = makeContext();
+      const results = await check.run(ctx);
+      expect(results).toHaveLength(0);
     });
   });
 });

@@ -198,6 +198,85 @@ describe('buildContext()', () => {
     expect(ctx.compose!.services[0].name).toBe('cache');
   });
 
+  it('should auto-detect a non-standard compose filename via sniffing', async () => {
+    const dir = createTempDir();
+    writeFileSync(
+      join(dir, 'production.yml'),
+      `services:
+  api:
+    image: node:20
+`,
+    );
+
+    const ctx = await buildContext(dir);
+
+    expect(ctx.compose).toBeDefined();
+    expect(ctx.compose!.path).toBe(join(dir, 'production.yml'));
+    expect(ctx.compose!.services[0].name).toBe('api');
+    expect(ctx.files.composePath).toBe(join(dir, 'production.yml'));
+  });
+
+  it('should prefer standard compose name over sniffed file', async () => {
+    const dir = createTempDir();
+    writeFileSync(
+      join(dir, 'docker-compose.yml'),
+      `services:
+  web:
+    image: nginx
+`,
+    );
+    writeFileSync(
+      join(dir, 'production.yml'),
+      `services:
+  api:
+    image: node:20
+`,
+    );
+
+    const ctx = await buildContext(dir);
+
+    expect(ctx.compose).toBeDefined();
+    expect(ctx.compose!.path).toBe(join(dir, 'docker-compose.yml'));
+  });
+
+  it('should not sniff-detect Kubernetes manifests as compose files', async () => {
+    const dir = createTempDir();
+    writeFileSync(
+      join(dir, 'deployment.yml'),
+      `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+`,
+    );
+
+    const ctx = await buildContext(dir);
+
+    expect(ctx.compose).toBeUndefined();
+    expect(ctx.files.composePath).toBeUndefined();
+  });
+
+  it('should not sniff-detect GitHub Actions workflows as compose files', async () => {
+    const dir = createTempDir();
+    writeFileSync(
+      join(dir, 'ci.yml'),
+      `name: CI
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+`,
+    );
+
+    const ctx = await buildContext(dir);
+
+    expect(ctx.compose).toBeUndefined();
+    expect(ctx.files.composePath).toBeUndefined();
+  });
+
   it('should parse all files together when Dockerfile, compose, and dockerignore all exist', async () => {
     const dir = createTempDir();
     writeFileSync(join(dir, 'Dockerfile'), 'FROM node:20\nCMD ["node"]\n');

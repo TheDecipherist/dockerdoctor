@@ -9,11 +9,13 @@ const PKG_VERSION = JSON.parse(
   readFileSync(join(import.meta.dirname, '..', '..', 'package.json'), 'utf-8'),
 ).version;
 
-function run(args: string, timeout = 30000): { stdout: string; exitCode: number } {
+function run(args: string, opts?: { timeout?: number; cwd?: string }): { stdout: string; exitCode: number } {
+  const timeout = opts?.timeout ?? 30000;
   try {
     const stdout = execSync(`node ${CLI} ${args}`, {
       encoding: 'utf-8',
       timeout,
+      cwd: opts?.cwd,
     });
     return { stdout, exitCode: 0 };
   } catch (err: unknown) {
@@ -37,15 +39,14 @@ describe('CLI integration', () => {
   });
 
   // Use subcommands to avoid runtime checks that probe Docker
-  it('dockerfile --json with bad Dockerfile returns warnings', () => {
+  it('dockerfile --json with bad Dockerfile returns errors', () => {
     const badFile = join(FIXTURES, 'dockerfiles', 'bad.Dockerfile');
     const { stdout, exitCode } = run(`dockerfile --json -f ${badFile}`);
-    // Dockerfile-category checks only produce warnings for this fixture
-    // (error-severity issues like hardcoded secrets are in the 'secrets' category)
-    expect(exitCode).toBe(0);
+    // node-env-trap produces an error-severity result for this fixture
+    expect(exitCode).toBe(1);
     const report = JSON.parse(stdout);
     expect(report.results).toBeDefined();
-    expect(report.summary.warnings).toBeGreaterThan(0);
+    expect(report.summary.errors).toBeGreaterThan(0);
     expect(report.summary.total).toBeGreaterThan(0);
   });
 
@@ -102,6 +103,33 @@ describe('CLI integration', () => {
     expect(report.summary.warnings).toBe(0);
     expect(report.summary.info).toBe(0);
     expect(report.summary.errors).toBeGreaterThan(0);
+  });
+
+  it('compose --json with network-stack.yml returns network errors', () => {
+    const composeFile = join(FIXTURES, 'compose', 'network-stack.yml');
+    const { stdout, exitCode } = run(`compose --json -c ${composeFile}`);
+    expect(exitCode).toBe(1);
+    const report = JSON.parse(stdout);
+    expect(report.results).toBeDefined();
+    expect(report.summary.errors).toBeGreaterThan(0);
+    // Should contain at least one of our new network checks
+    const networkCheckIds = report.results.map((r: { id: string }) => r.id);
+    expect(
+      networkCheckIds.includes('compose.network-mismatch') ||
+      networkCheckIds.includes('compose.undefined-network'),
+    ).toBe(true);
+    for (const result of report.results) {
+      expect(result.category).toBe('compose');
+    }
+  });
+
+  it('compose --json auto-detects non-standard compose filename via sniffing', () => {
+    const sniffDir = join(FIXTURES, 'sniff-compose');
+    const { stdout, exitCode } = run('compose --json', { cwd: sniffDir });
+    expect(exitCode).toBe(0);
+    const report = JSON.parse(stdout);
+    expect(report.results).toBeDefined();
+    expect(report.summary).toBeDefined();
   });
 
   it('JSON output matches Report schema', () => {

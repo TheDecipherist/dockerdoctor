@@ -1,8 +1,23 @@
 import chalk from 'chalk';
-import { intro, outro } from '@clack/prompts';
+import { intro, outro, log } from '@clack/prompts';
 
 export function showBanner(version: string): void {
   intro(chalk.bgCyan.black(` dockerdoctor v${version} `));
+}
+
+export async function showUpdateNotice(): Promise<void> {
+  try {
+    const { getUpdateInfo } = await import('../telemetry.js');
+    const info = await getUpdateInfo();
+    if (info?.updateAvailable) {
+      log.info(
+        chalk.yellow(`Update available: v${info.current} → v${info.latest}`) +
+        chalk.dim(`  Run: npm update -g dockerdoctor`),
+      );
+    }
+  } catch {
+    // Never let update check affect the CLI
+  }
 }
 
 export function showContext(ctx: {
@@ -31,6 +46,7 @@ export function showContext(ctx: {
   console.log();
 }
 
-export function showOutro(message: string): void {
+export async function showOutro(message: string): Promise<void> {
+  await showUpdateNotice();
   outro(chalk.green(message));
 }

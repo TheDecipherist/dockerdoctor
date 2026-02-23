@@ -42,13 +42,15 @@ registerCheck({
             type: 'manual',
             instructions:
               `Add a healthcheck block to service "${service.name}". For example:\n\n` +
-              `  ${service.name}:\n` +
-              `    healthcheck:\n` +
-              `      test: ["CMD", "curl", "-f", "http://localhost:${service.ports?.[0]?.split(':')?.[0] ?? '3000'}/health"]\n` +
-              `      interval: 30s\n` +
-              `      timeout: 10s\n` +
-              `      retries: 3\n` +
-              `      start_period: 40s\n\n` +
+              `  # In docker-compose.yml\n` +
+              `  services:\n` +
+              `    ${service.name}:\n` +
+              `      healthcheck:\n` +
+              `        test: ["CMD", "curl", "-f", "http://localhost:${service.ports?.[0]?.split(':')?.[0] ?? '3000'}/health"]\n` +
+              `        interval: 30s\n` +
+              `        timeout: 10s\n` +
+              `        retries: 3\n` +
+              `        start_period: 40s\n\n` +
               `For non-HTTP services, use a simple TCP check:\n` +
               `  test: ["CMD", "nc", "-z", "localhost", "5432"]\n\n` +
               `Or a process check:\n` +

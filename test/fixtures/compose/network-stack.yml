@@ -1,0 +1,39 @@
+# Realistic 3-service stack with intentional networking anti-patterns
+# Used by network-mismatch and undefined-network check tests
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    networks:
+      - frontend
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+
+  app:
+    build: .
+    expose:
+      - "3000"
+    depends_on:
+      - mailserver
+    environment:
+      SMTP_HOST: mailserver
+      SMTP_PORT: "587"
+    networks:
+      - backend
+
+  mailserver:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"
+    networks:
+      - mail
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge

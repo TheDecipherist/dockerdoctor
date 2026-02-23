@@ -4,14 +4,9 @@ import type { CheckContext } from './types/index.js';
 import { parseDockerfile } from './parsers/dockerfile.js';
 import { parseCompose } from './parsers/compose.js';
 import { parseDockerignore } from './parsers/dockerignore.js';
+import { findComposeFile } from './discovery.js';
 
 const DOCKERFILE_NAMES = ['Dockerfile', 'dockerfile', 'Dockerfile.dev', 'Dockerfile.prod'];
-const COMPOSE_NAMES = [
-  'docker-compose.yml',
-  'docker-compose.yaml',
-  'compose.yml',
-  'compose.yaml',
-];
 
 function findFile(cwd: string, names: string[]): string | undefined {
   for (const name of names) {
@@ -46,7 +41,7 @@ export async function buildContext(
   opts?: { dockerfilePath?: string; composePath?: string },
 ): Promise<CheckContext> {
   const dockerfilePath = opts?.dockerfilePath ?? findFile(cwd, DOCKERFILE_NAMES);
-  const composePath = opts?.composePath ?? findFile(cwd, COMPOSE_NAMES);
+  const composePath = opts?.composePath ?? findComposeFile(cwd);
   const dockerignorePath = findFile(cwd, ['.dockerignore']);
   const gitattributesPath = findFile(cwd, ['.gitattributes']);
   const shellScripts = findShellScripts(cwd);

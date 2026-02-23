@@ -6,9 +6,11 @@ const mockBuildContext = vi.fn();
 const mockRunChecks = vi.fn();
 const mockShowBanner = vi.fn();
 const mockShowContext = vi.fn();
-const mockShowOutro = vi.fn();
+const mockShowOutro = vi.fn().mockResolvedValue(undefined);
 const mockPrintResults = vi.fn();
 const mockPrintSummary = vi.fn();
+const mockCanUseTUI = vi.fn();
+const mockBrowseResultsTUI = vi.fn();
 const mockPromptFixes = vi.fn();
 const mockAutoApplyFixes = vi.fn();
 const mockSpinnerStart = vi.fn();
@@ -32,6 +34,11 @@ vi.mock('../../../src/ui/banner.js', () => ({
 vi.mock('../../../src/ui/reporter.js', () => ({
   printResults: mockPrintResults,
   printSummary: mockPrintSummary,
+}));
+
+vi.mock('../../../src/ui/browse-tui.js', () => ({
+  canUseTUI: mockCanUseTUI,
+  browseResultsTUI: mockBrowseResultsTUI,
 }));
 
 vi.mock('../../../src/ui/prompts.js', () => ({
@@ -93,6 +100,8 @@ describe('checkCommand', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockBuildContext.mockResolvedValue(mockContext);
+    mockCanUseTUI.mockReturnValue(false);
+    mockBrowseResultsTUI.mockResolvedValue(undefined);
     mockPromptFixes.mockResolvedValue(0);
     mockAutoApplyFixes.mockResolvedValue(0);
   });

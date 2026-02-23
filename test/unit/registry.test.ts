@@ -71,10 +71,10 @@ describe('registry', () => {
       expect(Array.isArray(all)).toBe(true);
     });
 
-    it('should return all registered checks (23 static + 25 runtime + 1 test check)', () => {
+    it('should return all registered checks (25 static + 25 runtime + 1 test check)', () => {
       const all = getAllChecks();
-      // 23 static + 25 runtime (4 build + 4 startup + 4 network + 4 perf + 4 image + 5 cleanup) + 1 test
-      expect(all.length).toBe(49);
+      // 25 static + 25 runtime (4 build + 4 startup + 4 network + 4 perf + 4 image + 5 cleanup) + 1 test
+      expect(all.length).toBe(51);
     });
 
     it('should return a copy — mutating the returned array does not affect internal state', () => {
@@ -119,9 +119,9 @@ describe('registry', () => {
       checks.forEach((c) => expect(c.category).toBe('dockerfile'));
     });
 
-    it('should return 5 compose checks', () => {
+    it('should return 7 compose checks', () => {
       const checks = getChecksByCategory('compose');
-      expect(checks.length).toBe(5);
+      expect(checks.length).toBe(7);
       checks.forEach((c) => expect(c.category).toBe('compose'));
     });
 
@@ -189,10 +189,10 @@ describe('registry', () => {
       });
     });
 
-    it('should return 24 static checks (23 built-in + 1 test)', () => {
+    it('should return 26 static checks (25 built-in + 1 test)', () => {
       const staticChecks = getStaticChecks();
-      // 23 built-in static + 1 test check = 24 (the 8 runtime checks are excluded)
-      expect(staticChecks.length).toBe(24);
+      // 25 built-in static + 1 test check = 26 (the 8 runtime checks are excluded)
+      expect(staticChecks.length).toBe(26);
     });
   });
 

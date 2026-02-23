@@ -1,0 +1,10 @@
+# Non-standard compose filename for sniff-detection testing
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+  api:
+    image: node:20-alpine
+    ports:
+      - "3000:3000"

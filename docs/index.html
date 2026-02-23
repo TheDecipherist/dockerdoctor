@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dockerdoctor — Diagnose &amp; Fix Docker Problems</title>
+  <meta name="description" content="Interactive CLI that diagnoses and fixes Docker problems automatically. 50 checks across 11 categories — lint Dockerfiles, compose files, and running containers.">
+
+  <!-- Favicon — stethoscope emoji as SVG -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩺</text></svg>">
+
+  <!-- Prism.js theme -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+  <script
+    src="https://app.rybbit.io/api/script.js"
+    data-site-id="e7e29192d813"
+    defer
+></script>
+</head>
+<body>
+  <header>
+    <nav class="container">
+      <ul>
+        <li>
+          <button id="menu-toggle" class="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+          </button>
+          <div class="brand">
+            <div class="brand-icon">🩺</div>
+            <div class="brand-text">
+              <span class="brand-title">dockerdoctor</span>
+              <span class="brand-author">by <a href="https://thedecipherist.com?utm_source=github-pages&utm_medium=website&utm_campaign=dockerdoctor&utm_content=header-author" target="_blank" rel="noopener">TheDecipherist</a></span>
+            </div>
+          </div>
+        </li>
+      </ul>
+      <ul>
+        <li><a href="https://github.com/TheDecipherist/dockerdoctor" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://www.npmjs.com/package/dockerdoctor" target="_blank" rel="noopener">npm</a></li>
+        <li class="dropdown">
+          <button class="dropdown-toggle" aria-expanded="false" aria-haspopup="true">
+            Projects
+            <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+              <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </button>
+          <div class="dropdown-menu">
+            <a href="https://thedecipherist.com?utm_source=github-pages&utm_medium=website&utm_campaign=dockerdoctor&utm_content=dropdown-thedecipherist" target="_blank" rel="noopener">
+              <img src="https://www.google.com/s2/favicons?domain=thedecipherist.com&sz=32" alt="" class="link-favicon">
+              <span class="dropdown-item-text"><span class="dropdown-item-title">TheDecipherist</span><span class="dropdown-item-desc">Personal website &amp; blog</span></span>
+            </a>
+            <a href="https://rulecatch.ai?utm_source=github-pages&utm_medium=website&utm_campaign=dockerdoctor&utm_content=dropdown-rulecatch" target="_blank" rel="noopener">
+              <img src="https://www.google.com/s2/favicons?domain=rulecatch.ai&sz=32" alt="" class="link-favicon">
+              <span class="dropdown-item-text"><span class="dropdown-item-title">RuleCatch.AI</span><span class="dropdown-item-desc">AI development analytics &amp; rule monitoring</span></span>
+            </a>
+            <a href="https://classpresso.com?utm_source=github-pages&utm_medium=website&utm_campaign=dockerdoctor&utm_content=dropdown-classpresso" target="_blank" rel="noopener">
+              <img src="https://www.google.com/s2/favicons?domain=classpresso.com&sz=32" alt="" class="link-favicon">
+              <span class="dropdown-item-text"><span class="dropdown-item-title">Classpresso</span><span class="dropdown-item-desc">Post-build CSS class consolidation</span></span>
+            </a>
+            <a href="https://tersejson.com?utm_source=github-pages&utm_medium=website&utm_campaign=dockerdoctor&utm_content=dropdown-tersejson" target="_blank" rel="noopener">
+              <img src="https://www.google.com/s2/favicons?domain=tersejson.com&sz=32" alt="" class="link-favicon">
+              <span class="dropdown-item-text"><span class="dropdown-item-title">TerseJSON</span><span class="dropdown-item-desc">Memory-efficient JSON with lazy expansion</span></span>
+            </a>
+          </div>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Mobile menu overlay -->
+  <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+
+  <!-- Mobile menu drawer -->
+  <aside id="mobile-menu" class="mobile-menu">
+    <nav id="mobile-toc" class="mobile-toc">
+      <div class="toc-header">Contents</div>
+      <a href="#features">Features</a>
+      <a href="#quick-start">Quick Start</a>
+      <a href="#interactive-mode">Interactive Mode</a>
+      <a href="#tui-browser">TUI Browser</a>
+      <a href="#commands">Commands &amp; Flags</a>
+      <a href="#static-checks">Static Checks</a>
+      <a href="#runtime-checks">Runtime Checks</a>
+      <a href="#compose-discovery">Compose Discovery</a>
+      <a href="#ci-integration">CI/CD Integration</a>
+      <a href="#api">Programmatic API</a>
+    </nav>
+  </aside>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="container hero-content">
+      <div class="hero-badge">50 Checks &middot; 11 Categories &middot; Auto-Fix</div>
+      <h1>Diagnose &amp; Fix Docker<br>Problems Automatically</h1>
+      <p class="hero-subtitle">Interactive CLI that lints your Dockerfile, compose file, and running containers. Get actionable fixes, not just warnings.</p>
+      <div class="hero-actions">
+        <a href="https://github.com/TheDecipherist/dockerdoctor" target="_blank" rel="noopener" class="btn btn-primary">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          View on GitHub
+        </a>
+        <a href="#quick-start" class="btn btn-secondary">Quick Start</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="container main-layout">
+    <aside id="sidebar">
+      <nav id="toc">
+        <div class="toc-header">Contents</div>
+        <a href="#features" class="active">Features</a>
+        <a href="#quick-start">Quick Start</a>
+        <a href="#interactive-mode">Interactive Mode</a>
+        <a href="#tui-browser">TUI Browser</a>
+        <a href="#commands">Commands &amp; Flags</a>
+        <a href="#static-checks">Static Checks</a>
+        <a href="#runtime-checks">Runtime Checks</a>
+        <a href="#compose-discovery">Compose Discovery</a>
+        <a href="#ci-integration">CI/CD Integration</a>
+        <a href="#api">Programmatic API</a>
+      </nav>
+    </aside>
+
+    <article id="content">
+
+      <!-- Features -->
+      <section id="features">
+        <h2>Features</h2>
+        <p>Everything you need to lint, diagnose, and fix Docker configurations &mdash; from static file checks to live container analysis.</p>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon feature-icon-cyan">🔍</div>
+            <h3>50 Checks</h3>
+            <p>25 static checks for Dockerfiles, compose files, secrets, line endings, and .dockerignore. 25 runtime checks for builds, startup, networking, performance, images, and cleanup.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon feature-icon-green">🔧</div>
+            <h3>Auto-Fix</h3>
+            <p>Safe fixes applied automatically with <code>--fix</code> or via interactive prompts. Manual fixes include paste-ready code examples.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon feature-icon-purple">🖥️</div>
+            <h3>Interactive TUI</h3>
+            <p>Split-pane terminal UI to browse results by severity, view fix details with YAML syntax highlighting, and copy code to clipboard.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon feature-icon-blue">📋</div>
+            <h3>Clipboard Copy</h3>
+            <p>Press <code>c</code> in the TUI to extract and copy only the code blocks from fix instructions &mdash; properly dedented, ready to paste.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon feature-icon-amber">🔎</div>
+            <h3>Smart Discovery</h3>
+            <p>Auto-detects compose files by standard names or content sniffing. Non-standard filenames like <code>infra.yml</code> are found automatically.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon feature-icon-pink">⚡</div>
+            <h3>CI-Friendly</h3>
+            <p>JSON output, deterministic exit codes, zero interactive prompts. Drop <code>--ci</code> into your GitHub Actions workflow.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Start -->
+      <section id="quick-start">
+        <h2>Quick Start</h2>
+
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Install</h3>
+            <pre class="language-bash"><code>npm install -g dockerdoctor</code></pre>
+            <p>Or use without installing:</p>
+            <pre class="language-bash"><code>npx dockerdoctor</code></pre>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Run</h3>
+            <pre class="language-bash"><code># Launch interactive mode (default)
+dockerdoctor
+
+# Lint just the Dockerfile
+dockerdoctor dockerfile
+
+# Check a specific compose file
+dockerdoctor compose -c docker-compose.prod.yml
+
+# JSON output for CI
+dockerdoctor --json --severity error
+
+# Auto-apply all safe fixes
+dockerdoctor --fix</code></pre>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Fix</h3>
+            <p>Browse results in the TUI, read fix instructions with YAML highlighting, press <code>c</code> to copy code, and paste directly into your files.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Interactive Mode -->
+      <section id="interactive-mode">
+        <h2>Interactive Mode</h2>
+        <p>Running <code>dockerdoctor</code> with no flags launches interactive mode &mdash; a guided wizard that walks you through scanning.</p>
+
+        <h3>Scan Target</h3>
+        <ul>
+          <li><strong>Scan current directory</strong> &mdash; check CWD for Docker files</li>
+          <li><strong>Scan subdirectories</strong> &mdash; recursively find Docker projects up to 4 levels deep</li>
+          <li><strong>Specify a directory path</strong> &mdash; enter any custom path</li>
+          <li><strong>Docker daemon only</strong> &mdash; skip file scanning, check running containers and images</li>
+        </ul>
+
+        <h3>Check Selection</h3>
+        <p>Pick <strong>All checks</strong> or select specific categories: Dockerfile, Compose, Secrets, Line Endings, Dockerignore, Build, Startup, Network, Performance, Image, or Cleanup.</p>
+        <p>Subdirectory scanning automatically skips <code>node_modules</code>, <code>.git</code>, <code>dist</code>, <code>build</code>, <code>.next</code>, <code>__pycache__</code>, and <code>vendor</code>.</p>
+      </section>
+
+      <!-- TUI Browser -->
+      <section id="tui-browser">
+        <h2>TUI Browser</h2>
+        <p>When results are found, the TUI shows a split-pane view with severity categories on the left and full detail on the right.</p>
+
+        <div class="tui-preview">
+          <div class="tui-header">&nbsp;Browse Results&nbsp;</div>
+          <span class="tui-dim">Dir:</span> /app &nbsp; <span class="tui-dim">Scan:</span> All checks<br>
+          <span class="tui-dim">────────────────────┬────────────────────────────────────</span><br>
+          <span class="tui-bold"> ▸ x Errors (3)     </span><span class="tui-dim">│</span> <span class="tui-bold">Errors</span><br>
+          <span class="tui-yellow">   ! Warnings (5)   </span><span class="tui-dim">│</span> <span class="tui-dim">3 issues</span><br>
+          <span class="tui-blue">   i Info (2)       </span><span class="tui-dim">│</span><br>
+          <span class="tui-dim">                    │</span> <span class="tui-red">x Service "web" has no healthcheck</span><br>
+          <span class="tui-dim">                    │</span> <span class="tui-red">x Undefined network "backend"</span><br>
+          <span class="tui-dim">                    │</span> <span class="tui-red">x Hardcoded secret in ENV</span><br>
+          <span class="tui-dim">────────────────────┴────────────────────────────────────</span><br>
+          <span class="tui-dim"> ↑↓ Navigate  Enter: Open  q: Exit</span>
+        </div>
+
+        <h3>Keyboard Shortcuts</h3>
+        <table class="key-table">
+          <tr><td><kbd>↑</kbd> / <kbd>↓</kbd> or <kbd>j</kbd> / <kbd>k</kbd></td><td>Navigate results</td></tr>
+          <tr><td><kbd>Enter</kbd> or <kbd>→</kbd></td><td>Open category / view detail</td></tr>
+          <tr><td><kbd>←</kbd> or <kbd>q</kbd></td><td>Go back</td></tr>
+          <tr><td><kbd>Shift</kbd>+<kbd>↑</kbd> / <kbd>Shift</kbd>+<kbd>↓</kbd></td><td>Scroll detail pane</td></tr>
+          <tr><td><kbd>c</kbd></td><td>Copy fix code to clipboard</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>Exit</td></tr>
+        </table>
+
+        <p>The <code>c</code> key extracts only code blocks from fix instructions &mdash; dedented and ready to paste directly into your Dockerfile or compose file.</p>
+      </section>
+
+      <!-- Commands -->
+      <section id="commands">
+        <h2>Commands &amp; Flags</h2>
+
+        <h3>Subcommands</h3>
+        <div class="commands-grid">
+          <div class="command-card">
+            <h3><code>dockerdoctor</code></h3>
+            <p class="command-desc">Launch interactive mode (default)</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor check</code></h3>
+            <p class="command-desc">Run all checks (default with --json/--ci/--fix)</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor dockerfile</code></h3>
+            <p class="command-desc">Lint Dockerfile only &mdash; 9 checks</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor compose</code></h3>
+            <p class="command-desc">Lint compose file only &mdash; 7 checks</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor secrets</code></h3>
+            <p class="command-desc">Scan for hardcoded secrets &mdash; 4 checks</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor lineendings</code></h3>
+            <p class="command-desc">Check for CRLF issues &mdash; 3 checks</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor build</code></h3>
+            <p class="command-desc">Diagnose build failures &mdash; 4 checks (Docker)</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor startup</code></h3>
+            <p class="command-desc">Diagnose startup failures &mdash; 4 checks (Docker)</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor network</code></h3>
+            <p class="command-desc">Diagnose networking issues &mdash; 4 checks (Docker)</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor perf</code></h3>
+            <p class="command-desc">Diagnose performance issues &mdash; 4 checks (Docker)</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor image</code></h3>
+            <p class="command-desc">Analyze image for bloat &mdash; 4 checks (Docker)</p>
+          </div>
+          <div class="command-card">
+            <h3><code>dockerdoctor cleanup</code></h3>
+            <p class="command-desc">Find reclaimable disk space &mdash; 5 checks (Docker)</p>
+          </div>
+        </div>
+
+        <h3>Flags</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Flag</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>--json</code></td><td></td><td>Output results as JSON</td></tr>
+              <tr><td><code>--ci</code></td><td></td><td>CI mode (JSON output + exit codes)</td></tr>
+              <tr><td><code>--fix</code></td><td></td><td>Auto-apply all safe fixes</td></tr>
+              <tr><td><code>--severity &lt;level&gt;</code></td><td></td><td>Minimum severity: error, warning, or info</td></tr>
+              <tr><td><code>-f, --file &lt;path&gt;</code></td><td></td><td>Path to Dockerfile</td></tr>
+              <tr><td><code>-c, --composefile &lt;path&gt;</code></td><td></td><td>Path to compose file</td></tr>
+              <tr><td><code>-V, --version</code></td><td></td><td>Print version</td></tr>
+              <tr><td><code>-h, --help</code></td><td></td><td>Print help</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Static Checks -->
+      <section id="static-checks">
+        <h2>Static Checks <span class="badge badge-static">No Docker Required</span></h2>
+        <p>25 checks that analyze your files without needing a running Docker daemon.</p>
+
+        <h3>Dockerfile &mdash; 9 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>Base image <code>:latest</code></td><td></td><td>Non-deterministic builds from unpinned base image tags</td></tr>
+              <tr><td>Running as root</td><td></td><td>Container processes running as root user</td></tr>
+              <tr><td>Shell form CMD</td><td></td><td>Shell form instead of exec form for CMD/ENTRYPOINT</td></tr>
+              <tr><td>Layer ordering</td><td></td><td><code>COPY . .</code> before package file copy invalidates cache</td></tr>
+              <tr><td>npm install</td><td></td><td>Using <code>npm install</code> instead of <code>npm ci</code></td></tr>
+              <tr><td>Missing multi-stage</td><td></td><td>Single-stage builds that include build tools in the final image</td></tr>
+              <tr><td>NODE_ENV trap</td><td></td><td>NODE_ENV set before <code>npm ci</code> blocks devDependencies</td></tr>
+              <tr><td>Missing CHOWN</td><td></td><td>COPY/ADD without --chown leaves files owned by root</td></tr>
+              <tr><td>Alpine cache</td><td></td><td>Missing <code>--no-cache</code> or <code>rm -rf /var/cache/apk/*</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Compose &mdash; 7 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>Missing healthcheck</td><td></td><td>Services with ports but no healthcheck block</td></tr>
+              <tr><td>Undefined network</td><td></td><td>Service references a network not in the top-level networks block</td></tr>
+              <tr><td>Network mismatch</td><td></td><td>Services that need to communicate are on different networks</td></tr>
+              <tr><td>Static IP</td><td></td><td>Hardcoded IP addresses in service network configuration</td></tr>
+              <tr><td>Bind mounts</td><td></td><td>Host-path bind mounts that break portability</td></tr>
+              <tr><td>Bridge network</td><td></td><td>Using the default bridge network instead of custom networks</td></tr>
+              <tr><td>Swarm ignored</td><td></td><td>Swarm-specific config (deploy) ignored in <code>docker compose</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Secrets &mdash; 4 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>Dockerfile ENV</td><td></td><td>Hardcoded passwords/tokens in ENV instructions</td></tr>
+              <tr><td>Dockerfile ARG</td><td></td><td>Secrets passed via ARG (visible in image history)</td></tr>
+              <tr><td>Compose environment</td><td></td><td>Hardcoded secrets in compose service environment</td></tr>
+              <tr><td>Sensitive COPY</td><td></td><td>Copying <code>.env</code>, key files, or credentials into the image</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Line Endings &mdash; 3 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>CRLF detection</td><td></td><td>Windows line endings that break shell scripts in Linux containers</td></tr>
+              <tr><td>Missing .gitattributes</td><td></td><td>No .gitattributes to enforce consistent line endings</td></tr>
+              <tr><td>Missing dos2unix</td><td></td><td>No dos2unix conversion step in the Dockerfile</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Dockerignore &mdash; 2 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>Missing file</td><td></td><td>No .dockerignore file, causing bloated build context</td></tr>
+              <tr><td>Missing entries</td><td></td><td>Common entries like <code>node_modules</code>, <code>.git</code> not excluded</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Runtime Checks -->
+      <section id="runtime-checks">
+        <h2>Runtime Checks <span class="badge badge-runtime">Requires Docker</span></h2>
+        <p>25 checks that inspect your running Docker daemon, containers, and images.</p>
+
+        <h3>Build &mdash; 4 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>Large build context</td><td></td><td>Build context too large, slowing down builds</td></tr>
+              <tr><td>DNS resolution</td><td></td><td>DNS failures during build (can't download packages)</td></tr>
+              <tr><td>Disk space</td><td></td><td>Insufficient disk space to complete a build</td></tr>
+              <tr><td>Platform mismatch</td><td></td><td>Building for wrong platform (e.g., ARM on x86)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Startup &mdash; 4 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>Exit code analysis</td><td></td><td>Decodes exit codes (137=OOM, 126=permission, 127=not found)</td></tr>
+              <tr><td>OOM killed</td><td></td><td>Containers killed by the OOM killer</td></tr>
+              <tr><td>Environment variables</td><td></td><td>Missing or empty required environment variables</td></tr>
+              <tr><td>Entrypoint exists</td><td></td><td>CMD/ENTRYPOINT binary not found or not executable</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Network &mdash; 4 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>Same network</td><td></td><td>Containers that should communicate are on different networks</td></tr>
+              <tr><td>DNS resolution</td><td></td><td>DNS resolution failures between containers</td></tr>
+              <tr><td>Port conflicts</td><td></td><td>Multiple containers trying to bind the same host port</td></tr>
+              <tr><td>Localhost binding</td><td></td><td>Services bound to 127.0.0.1, unreachable from other containers</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Performance &mdash; 4 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>Resource usage</td><td></td><td>High CPU or memory consumption</td></tr>
+              <tr><td>Bind mount I/O</td><td></td><td>Slow I/O from host-mounted volumes</td></tr>
+              <tr><td>Build cache</td><td></td><td>Docker build cache not being utilized effectively</td></tr>
+              <tr><td>Resource limits</td><td></td><td>No memory/CPU limits set, risking resource exhaustion</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Image &mdash; 4 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>Image size</td><td></td><td>Oversized images that waste bandwidth and storage</td></tr>
+              <tr><td>Layer analysis</td><td></td><td>Inefficient layer structure, duplicate content</td></tr>
+              <tr><td>Architecture mismatch</td><td></td><td>Running ARM images on x86 or vice versa (via emulation)</td></tr>
+              <tr><td>Base image bloat</td><td></td><td>Base image includes unnecessary tools and libraries</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Cleanup &mdash; 5 checks</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Check</th><th></th><th>What it catches</th></tr></thead>
+            <tbody>
+              <tr><td>Disk usage</td><td></td><td>Docker consuming excessive disk space</td></tr>
+              <tr><td>Dangling images</td><td></td><td>Untagged images left behind by builds</td></tr>
+              <tr><td>Stopped containers</td><td></td><td>Exited containers wasting disk space</td></tr>
+              <tr><td>Unused volumes</td><td></td><td>Volumes no longer attached to any container</td></tr>
+              <tr><td>Build cache</td><td></td><td>Build cache consuming significant disk space</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Compose Discovery -->
+      <section id="compose-discovery">
+        <h2>Compose Discovery</h2>
+        <p>dockerdoctor automatically finds compose files using a two-pass strategy:</p>
+
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Standard names</h3>
+            <p>Checks for <code>docker-compose.yml</code>, <code>docker-compose.yaml</code>, <code>compose.yml</code>, and <code>compose.yaml</code>.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Content sniffing</h3>
+            <p>If no standard file is found, scans all <code>.yml</code> / <code>.yaml</code> files for a <code>services:</code> key. This catches non-standard filenames like <code>infra.yml</code> or <code>stack.yaml</code>.</p>
+            <p>Automatically skips CI configs (<code>.gitlab-ci.yml</code>, <code>azure-pipelines.yml</code>), Kubernetes manifests (<code>Chart.yaml</code>, <code>values.yaml</code>), and build tool files (<code>mkdocs.yml</code>, <code>pnpm-lock.yaml</code>).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CI Integration -->
+      <section id="ci-integration">
+        <h2>CI/CD Integration</h2>
+
+        <h3>GitHub Actions</h3>
+        <pre class="language-yaml"><code>- name: Lint Dockerfiles
+  run: npx dockerdoctor --ci --severity error</code></pre>
+
+        <p>The <code>--ci</code> flag outputs JSON and uses exit codes:</p>
+        <ul>
+          <li><strong>Exit 0</strong> &mdash; no errors found</li>
+          <li><strong>Exit 1</strong> &mdash; errors found (warnings and info alone don't trigger failure)</li>
+          <li><strong>Exit 2</strong> &mdash; invalid arguments (bad file path, invalid severity)</li>
+        </ul>
+      </section>
+
+      <!-- API -->
+      <section id="api">
+        <h2>Programmatic API</h2>
+        <p>Import and run checks from your own scripts:</p>
+
+        <pre class="language-typescript"><code>import { buildContext, runChecks } from 'dockerdoctor';
+
+const context = await buildContext(process.cwd());
+const report = await runChecks(context, {
+  categories: ['dockerfile', 'secrets'],
+  minSeverity: 'warning',
+});
+
+console.log(`Found ${report.summary.errors} errors`);
+for (const result of report.results) {
+  console.log(`[${result.severity}] ${result.title}: ${result.message}`);
+}</code></pre>
+
+        <h3>Exports</h3>
+        <div class="check-table-wrapper">
+          <table class="check-table">
+            <thead><tr><th>Function</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>buildContext(cwd)</code></td><td></td><td>Auto-detect and parse Docker files in a directory</td></tr>
+              <tr><td><code>runChecks(context, opts)</code></td><td></td><td>Execute checks and return a Report</td></tr>
+              <tr><td><code>registerCheck(check)</code></td><td></td><td>Register a custom check</td></tr>
+              <tr><td><code>getAllChecks()</code></td><td></td><td>Get all registered checks</td></tr>
+              <tr><td><code>getChecksByCategory(cat)</code></td><td></td><td>Get checks for a specific category</td></tr>
+              <tr><td><code>parseDockerfile(raw, path)</code></td><td></td><td>Parse a Dockerfile string into structured data</td></tr>
+              <tr><td><code>parseCompose(raw, path)</code></td><td></td><td>Parse a compose file string</td></tr>
+              <tr><td><code>findComposeFile(dir)</code></td><td></td><td>Find a compose file using standard names + sniffing</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </article>
+  </main>
+
+  <footer class="container">
+    <div class="footer-projects">
+      <span class="footer-label">More projects:</span>
+      <a href="https://thedecipherist.com?utm_source=github-pages&utm_medium=website&utm_campaign=dockerdoctor&utm_content=footer-thedecipherist" target="_blank" rel="noopener">
+        <img src="https://www.google.com/s2/favicons?domain=thedecipherist.com&sz=32" alt="" class="link-favicon">
+        TheDecipherist
+      </a>
+      <a href="https://rulecatch.ai?utm_source=github-pages&utm_medium=website&utm_campaign=dockerdoctor&utm_content=footer-rulecatch" target="_blank" rel="noopener">
+        <img src="https://www.google.com/s2/favicons?domain=rulecatch.ai&sz=32" alt="" class="link-favicon">
+        RuleCatch.AI
+      </a>
+      <a href="https://classpresso.com?utm_source=github-pages&utm_medium=website&utm_campaign=dockerdoctor&utm_content=footer-classpresso" target="_blank" rel="noopener">
+        <img src="https://www.google.com/s2/favicons?domain=classpresso.com&sz=32" alt="" class="link-favicon">
+        Classpresso
+      </a>
+      <a href="https://tersejson.com?utm_source=github-pages&utm_medium=website&utm_campaign=dockerdoctor&utm_content=footer-tersejson" target="_blank" rel="noopener">
+        <img src="https://www.google.com/s2/favicons?domain=tersejson.com&sz=32" alt="" class="link-favicon">
+        TerseJSON
+      </a>
+    </div>
+    <p>MIT License &mdash; <a href="https://github.com/TheDecipherist/dockerdoctor" target="_blank" rel="noopener">dockerdoctor</a></p>
+  </footer>
+
+  <!-- Prism.js -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+
+  <!-- App JS -->
+  <script src="app.js"></script>
+</body>
+</html>

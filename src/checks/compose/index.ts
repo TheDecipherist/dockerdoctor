@@ -4,3 +4,5 @@ import './swarm-ignored.js';
 import './missing-healthcheck.js';
 import './bridge-network.js';
 import './bind-mounts.js';
+import './network-mismatch.js';
+import './undefined-network.js';

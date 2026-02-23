@@ -39,15 +39,7 @@ describe('dockerfile checks', () => {
   describe('dockerfile.layer-order', () => {
     const check = findCheck('dockerfile.layer-order');
 
-    // NOTE: docker-file-parser returns COPY args as arrays, which get JSON-stringified.
-    // This means COPY . . produces args like '[".","." ]' and COPY package.json ./
-    // produces args like '["package.json","./"]'. The layer-order check's regex
-    // operates on these JSON strings, so the broad COPY pattern ('. .') cannot be
-    // detected from the JSON-stringified form. We test the actual behavior here.
-
-    it('should not flag when args are JSON-stringified arrays (parser behavior)', async () => {
-      // Due to docker-file-parser returning arrays for COPY, the regex-based
-      // detection of "COPY . ." does not match the JSON-stringified args.
+    it('should flag when args are JSON-stringified arrays (parser behavior)', async () => {
       const raw = `FROM node:20
 WORKDIR /app
 COPY . .
@@ -58,8 +50,9 @@ COPY package.json ./
       const ctx = makeContext({ dockerfile });
       const results = await check.run(ctx);
 
-      // The check cannot detect the pattern because COPY args are JSON arrays
-      expect(results).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].id).toBe('dockerfile.layer-order');
+      expect(results[0].severity).toBe('warning');
     });
 
     it('should flag when a manually-constructed dockerfile has string args for COPY', async () => {
@@ -256,14 +249,7 @@ RUN npm install express
   describe('dockerfile.node-env-trap', () => {
     const check = findCheck('dockerfile.node-env-trap');
 
-    // NOTE: docker-file-parser returns ENV args as objects {KEY: "value"}, which
-    // get JSON-stringified to '{"NODE_ENV":"production"}'. The node-env-trap
-    // check regex \bNODE_ENV[\s=]+production\b cannot match this JSON format
-    // (it has colons and quotes between KEY and value). We test both the actual
-    // parser-based behavior and manually constructed contexts.
-
-    it('should not detect NODE_ENV trap from parsed ENV=syntax (JSON-stringified)', async () => {
-      // parser converts ENV NODE_ENV=production to args: {"NODE_ENV":"production"}
+    it('should detect NODE_ENV trap from parsed ENV=syntax (JSON-stringified)', async () => {
       const raw = `FROM node:20
 ENV NODE_ENV=production
 COPY package*.json ./
@@ -273,8 +259,9 @@ RUN npm ci
       const ctx = makeContext({ dockerfile });
       const results = await check.run(ctx);
 
-      // Regex cannot match JSON-stringified ENV args
-      expect(results).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].id).toBe('dockerfile.node-env-trap');
+      expect(results[0].severity).toBe('error');
     });
 
     it('should flag NODE_ENV=production before npm install with string args', async () => {

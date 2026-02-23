@@ -1,5 +1,6 @@
 import { registerCheck } from '../registry.js';
 import type { CheckContext, CheckResult } from '../../types/index.js';
+import { normalizeArgs } from '../utils.js';
 
 registerCheck({
   id: 'dockerfile.layer-order',
@@ -19,7 +20,7 @@ registerCheck({
       for (const instr of stage.instructions) {
         if (instr.name !== 'COPY') continue;
 
-        const args = instr.args.trim();
+        const args = normalizeArgs(instr.args);
 
         // Detect broad copy patterns like "COPY . ." or "COPY ./ ./"
         if (/^(?:--[a-z-]+=\S+\s+)*\.\s+\./.test(args) || /^(?:--[a-z-]+=\S+\s+)*\.\/\s+/.test(args)) {

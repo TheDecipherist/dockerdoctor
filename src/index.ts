@@ -15,6 +15,7 @@ export type {
 
 export { registerCheck, getAllChecks, getChecksByCategory } from './checks/registry.js';
 export { buildContext } from './context.js';
+export { findComposeFile, findAllComposeFiles, looksLikeComposeFile } from './discovery.js';
 export { runChecks } from './runner.js';
 export { parseDockerfile } from './parsers/dockerfile.js';
 export { parseCompose } from './parsers/compose.js';

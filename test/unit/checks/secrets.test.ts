@@ -40,13 +40,7 @@ describe('secrets checks', () => {
   describe('secrets.dockerfile-env', () => {
     const check = findCheck('secrets.dockerfile-env');
 
-    // NOTE: docker-file-parser returns ENV args as objects {KEY: "value"}, which
-    // get JSON-stringified. The dockerfile-env check parses KEY=value pairs from
-    // the args string using regex. When args is JSON like '{"DB_PASSWORD":"supersecret123"}',
-    // the KEY=value regex doesn't match the JSON format. We test with manually
-    // constructed contexts with string args to exercise the check logic properly.
-
-    it('should not detect secrets from parsed ENV=syntax (JSON-stringified args)', async () => {
+    it('should detect secrets from parsed ENV=syntax (JSON-stringified args)', async () => {
       const raw = `FROM node:20
 ENV DB_PASSWORD=supersecret123
 `;
@@ -54,9 +48,9 @@ ENV DB_PASSWORD=supersecret123
       const ctx = makeContext({ dockerfile });
       const results = await check.run(ctx);
 
-      // Parser produces JSON args like {"DB_PASSWORD":"supersecret123"},
-      // which the regex KEY=value pattern cannot match
-      expect(results).toHaveLength(0);
+      expect(results).toHaveLength(1);
+      expect(results[0].id).toBe('secrets.dockerfile-env');
+      expect(results[0].severity).toBe('error');
     });
 
     it('should flag hardcoded password in ENV (string args)', async () => {

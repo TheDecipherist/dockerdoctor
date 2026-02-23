@@ -1,5 +1,6 @@
 import { registerCheck } from '../registry.js';
 import type { CheckContext, CheckResult } from '../../types/index.js';
+import { normalizeArgs } from '../utils.js';
 
 registerCheck({
   id: 'dockerfile.node-env-trap',
@@ -19,7 +20,7 @@ registerCheck({
       for (const instr of stage.instructions) {
         // Detect ENV NODE_ENV=production or ENV NODE_ENV production
         if (instr.name === 'ENV') {
-          const args = instr.args.trim();
+          const args = normalizeArgs(instr.args);
           if (/\bNODE_ENV[\s=]+production\b/.test(args)) {
             nodeEnvLine = instr.lineno;
             nodeEnvRaw = instr.raw;

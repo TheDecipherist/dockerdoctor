@@ -1,5 +1,6 @@
 import { registerCheck } from '../registry.js';
 import type { CheckContext, CheckResult } from '../../types/index.js';
+import { normalizeArgs } from '../utils.js';
 
 const SECRET_PATTERNS = [
   /password/i,
@@ -26,7 +27,7 @@ registerCheck({
     for (const instr of context.dockerfile.allInstructions) {
       if (instr.name !== 'ENV') continue;
 
-      const args = instr.args.trim();
+      const args = normalizeArgs(instr.args);
 
       // ENV can be "KEY=value" or "KEY value" or multi-key "KEY1=val1 KEY2=val2"
       // Parse all KEY=value pairs

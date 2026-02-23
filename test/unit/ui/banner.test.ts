@@ -2,9 +2,15 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 const mockIntro = vi.fn();
 const mockOutro = vi.fn();
+const mockLog = { info: vi.fn() };
 vi.mock('@clack/prompts', () => ({
   intro: mockIntro,
   outro: mockOutro,
+  log: mockLog,
+}));
+
+vi.mock('../../../src/telemetry.js', () => ({
+  getUpdateInfo: vi.fn().mockResolvedValue(null),
 }));
 
 describe('banner', () => {
@@ -128,8 +134,8 @@ describe('banner', () => {
   });
 
   describe('showOutro', () => {
-    it('should call outro() with a string containing the message', () => {
-      showOutro('Done scanning!');
+    it('should call outro() with a string containing the message', async () => {
+      await showOutro('Done scanning!');
 
       expect(mockOutro).toHaveBeenCalledTimes(1);
       const arg = mockOutro.mock.calls[0][0] as string;
