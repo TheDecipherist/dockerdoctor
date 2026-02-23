@@ -1,0 +1,68 @@
+{
+  "name": "dockerdoctor",
+  "version": "0.1.0",
+  "description": "Interactive CLI tool that diagnoses and fixes Docker problems automatically",
+  "type": "module",
+  "bin": {
+    "dockerdoctor": "./dist/bin/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "docker",
+    "dockerfile",
+    "docker-compose",
+    "linter",
+    "diagnostics",
+    "devtools",
+    "cli"
+  ],
+  "author": "Tim Carter Clausen",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheDecipherist/dockerdoctor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TheDecipherist/dockerdoctor/issues"
+  },
+  "homepage": "https://github.com/TheDecipherist/dockerdoctor#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.0.1",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "docker-file-parser": "^1.0.7",
+    "dockerode": "^4.0.9",
+    "execa": "^9.6.1",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^4.0.1",
+    "@types/node": "^25.3.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

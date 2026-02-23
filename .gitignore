@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.*
+.env.local
+_ai_temp/
+.claude/
+docs/
+*.tgz
+DOCKER-DOCTOR-PROGRESS.md

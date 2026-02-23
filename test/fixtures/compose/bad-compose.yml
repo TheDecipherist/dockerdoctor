@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_PASSWORD=mysecret123
+      - API_KEY=sk-live-abc123
+    volumes:
+      - ./data:/app/data
+    restart: always
+    container_name: my-web
+    depends_on:
+      - db
+    deploy:
+      replicas: 3
+    networks:
+      backend:
+        ipv4_address: 172.20.0.10
+
+  db:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "password123"
+    volumes:
+      - /var/data/postgres:/var/lib/postgresql/data
+    deploy:
+      replicas: 1
+
+networks:
+  backend:
+    driver: bridge

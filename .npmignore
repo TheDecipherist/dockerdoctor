@@ -1,0 +1,10 @@
+src/
+test/
+.github/
+.claude/
+_ai_temp/
+docs/
+*.config.ts
+tsconfig.json
+.gitignore
+.env*
