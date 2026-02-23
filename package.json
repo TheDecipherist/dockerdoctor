@@ -1,6 +1,6 @@
 {
   "name": "dockerdoctor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Interactive CLI tool that diagnoses and fixes Docker problems automatically",
   "type": "module",
   "bin": {

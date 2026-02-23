@@ -1,5 +1,8 @@
 # dockerdoctor
 
+[![npm version](https://img.shields.io/npm/v/dockerdoctor)](https://www.npmjs.com/package/dockerdoctor)
+[![license](https://img.shields.io/npm/l/dockerdoctor)](LICENSE)
+
 Interactive CLI that diagnoses and fixes Docker problems automatically. Lint your Dockerfile, compose file, and running containers — get actionable fixes, not just warnings.
 
 ## Features
