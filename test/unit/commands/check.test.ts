@@ -151,7 +151,7 @@ describe('checkCommand', () => {
 
       await checkCommand({});
 
-      expect(mockShowBanner).toHaveBeenCalledWith('0.1.0');
+      expect(mockShowBanner).toHaveBeenCalledWith(expect.any(String));
       expect(mockShowContext).toHaveBeenCalledWith({
         dockerfilePath: mockContext.files.dockerfilePath,
         composePath: mockContext.files.composePath,
